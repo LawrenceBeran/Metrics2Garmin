@@ -1,0 +1,9 @@
+{
+    "access_token": "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIyM1FOVEgiLCJzdWIiOiIyWU1WTlEiLCJpc3MiOiJGaXRiaXQiLCJ0eXAiOiJhY2Nlc3NfdG9rZW4iLCJzY29wZXMiOiJyd2VpIHJwcm8iLCJleHAiOjE3NTMyMjMyNTIsImlhdCI6MTc1MzE5NDQ1Mn0.IJ2qD8maNpmvn4lGNPDjI7uivXJBfgjN1fIQ8BaxyCQ",
+    "expires_in": 28800,
+    "refresh_token": "291266b1ed8280912cd60249296c676b1728a0d52c3bc0650203626613d6cedc",
+    "scope": "weight profile",
+    "token_type": "Bearer",
+    "user_id": "2YMVNQ"
+}
+

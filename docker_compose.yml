@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  metrics2garmin:
+    build: .
+    container_name: metrics2garmin
+    restart: unless-stopped
+    environment:
+      # Fitbit API credentials
+      - FITBIT_CLIENT_ID=${FITBIT_CLIENT_ID}
+      - FITBIT_CLIENT_SECRET=${FITBIT_CLIENT_SECRET}
+      
+      # Garmin credentials
+      - GARMIN_EMAIL=${GARMIN_EMAIL}
+      - GARMIN_PASSWORD=${GARMIN_PASSWORD}
+      
+      # OMRON credentials
+      - OMRON_EMAIL=${OMRON_EMAIL}
+      - OMRON_PASSWORD=${OMRON_PASSWORD}
+      - OMRON_COUNTRY_CODE=${OMRON_COUNTRY_CODE}
+      - OMRON_USER_NUMBER=${OMRON_USER_NUMBER:-1} 
+
+      # Optional: Sync interval in hours
+      - SYNC_INTERVAL_HOURS=${SYNC_INTERVAL_HOURS:-6}  # Default to 6 hours if not set
+
+      # Optional: Timezone
+      - TZ=${TZ:-UTC}
+
+      # Optional: Debugging
+      - DEBUG=${DEBUG:-false}  # Enable debug mode if set to true
+
+    env_file:
+      - .env  # Load environment variables from a file
+
+    ports:
+      - "5070:5070"  # Main application port
+      # Uncomment the following line to expose the debugging port if needed
+      # Note: Ensure debugpy is installed and configured in your application
+#      - "5678:5678"  # Debugging port (if enabled)
+    
+    volumes:
+      - C:\Docker\metrics2garmin\data:/app/data  # Persistent data storage
+      - C:\Docker\metrics2garmin\logs:/app/logs  # Log files

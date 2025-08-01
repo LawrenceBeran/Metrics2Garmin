@@ -1,0 +1,2 @@
+0 */{{SYNC_INTERVAL_HOURS}} * * * cd /app && /app/src/metrics_migration.py >/proc/1/fd/1 2>/proc/1/fd/2
+#*/{{SYNC_INTERVAL_HOURS}} * * * * cd /app && /app/src/metrics_migration.py >/proc/1/fd/1 2>/proc/1/fd/2
