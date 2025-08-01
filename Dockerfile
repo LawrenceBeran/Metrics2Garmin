@@ -22,8 +22,6 @@ COPY scripts/ /app/scripts/
 RUN mkdir -p /app/data
 RUN mkdir -p /app/logs
 
-#RUN touch /var/log/migration.log
-#RUN chmod oug+wr /var/log/migration.log
 RUN ln -sf /proc/1/fd/1 /var/log/migration.log
 
 RUN touch /app/logs/migration.log

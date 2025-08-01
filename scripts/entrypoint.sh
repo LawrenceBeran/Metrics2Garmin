@@ -16,21 +16,13 @@ sed "s/{{SYNC_INTERVAL_HOURS}}/${SYNC_INTERVAL_HOURS:-6}/" /app/config/crontab.t
 chmod 0644 /etc/cron.d/metrics-sync
 crontab /etc/cron.d/metrics-sync
 
-
-
-#touch /app/logs/migration.log
-#chmod oug+wr /app/logs/migration.log
-
-
 # Run initial body composition migration
 echo "Running initial body composition migration..."
 /app/src/metrics_migration.py
 
-
 # Start cron daemon
 echo "Starting cron with ${SYNC_INTERVAL_HOURS:-6} hour interval..."
 cron
-
 
 echo "Starting Flask..."
 /app/src/routes.py

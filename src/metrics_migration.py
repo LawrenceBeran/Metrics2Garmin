@@ -365,12 +365,18 @@ class BodyCompositionMigrator:
             logger.info("No blood pressure data found to migrate")
             return True
 
+        # Get the last recorded datetime from the read metrics
+        last_recorded_date = self.get_latest_recorded_date(omron_bp_data)
+
         gc_pb_data = self.get_garmin_bp_measurements(start_date, end_date)
         if gc_pb_data:
             omron_bp_data = self.trim_allready_existing_bp_data(_gc_bp_data=gc_pb_data, _omron_bp_data=omron_bp_data)
 
         if not omron_bp_data:
             logger.info("No blood pressure data found to migrate")
+            if gc_pb_data:
+                # Save migration state
+                common.save_migration_state(MIGRATION_TYPE.OMRON, last_recorded_date)
             return True
 
         # Log summary of data found
@@ -381,8 +387,7 @@ class BodyCompositionMigrator:
 
         logger.info(f"Migration completed: {successful_uploads}/{len(omron_bp_data)} entries uploaded successfully")
 
-       # Update the end_date to the last recorded date in the data. If no data provided, use the start_date.
-        last_recorded_date = self.get_latest_recorded_date(omron_bp_data)
+        # Update the end_date to the last recorded date in the data. If no data provided, use the start_date.
         if last_recorded_date:
             end_date = last_recorded_date
         else:
