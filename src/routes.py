@@ -10,7 +10,7 @@ app = Flask(__name__)
 @app.route('/')
 def home():
     last_fitbit_migration_date = common.get_last_migration_date(MIGRATION_TYPE.FITBIT)
-    last_omron_migration_date = common.get_last_migration_date(MIGRATION_TYPE.GOOGLE_FIT)
+    last_omron_migration_date = common.get_last_migration_date(MIGRATION_TYPE.OMRON)
     
     
     return f'<h1>Hello from Flask & Docker</h1>' \
