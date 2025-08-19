@@ -3,6 +3,7 @@ version: '3.8'
 services:
   metrics2garmin:
     build: .
+#    image: lawrenceberan/metrics2garmin:latest
     container_name: metrics2garmin
     restart: unless-stopped
     environment:
@@ -39,5 +40,5 @@ services:
 #      - "5678:5678"  # Debugging port (if enabled)
     
     volumes:
-      - C:\Docker\metrics2garmin\data:/app/data  # Persistent data storage
-      - C:\Docker\metrics2garmin\logs:/app/logs  # Log files
+      - ${DOCKERDIR}\metrics2garmin\data:/app/data  # Persistent data storage
+      - ${DOCKERDIR}\metrics2garmin\logs:/app/logs  # Log files

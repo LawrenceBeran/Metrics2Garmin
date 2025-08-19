@@ -61,6 +61,13 @@ class BodyCompositionMigrator:
             logger.exception(f"Failed to connect to Garmin: {e}")
             return False
 
+
+    def isFitbitConfigured(self) -> bool:
+        """Check if Fitbit credentials are configured"""
+        client_id = os.getenv('FITBIT_CLIENT_ID')
+        client_secret = os.getenv('FITBIT_CLIENT_SECRET')
+        return bool(client_id and client_secret)
+    
     
     def connect_fitbit(self) -> bool:
         """Initialize Fitbit client"""
@@ -83,6 +90,15 @@ class BodyCompositionMigrator:
             logger.exception(f"Failed to connect to Fitbit: {e}")
             return False
 
+
+    def isOmronConfigured(self) -> bool:
+        """Check if Omron credentials are configured"""
+        email_address = os.getenv('OMRON_EMAIL')
+        password = os.getenv('OMRON_PASSWORD')
+        country_code = os.getenv('OMRON_COUNTRY_CODE')
+        return bool(email_address and password and country_code)
+
+
     def connect_omron(self) -> bool:
         """Initialize Omron client"""
         try:
@@ -103,6 +119,7 @@ class BodyCompositionMigrator:
             
             logger.info("Successfully connected to Omron")
             return True
+        
         except Exception as e:
             logger.exception(f"Failed to connect to Omron: {e}")
             return False
@@ -404,17 +421,19 @@ def main():
     try:
         migrator = BodyCompositionMigrator()
 
-        success = migrator.fitbit2garmin_migrate_body_composition()
-        if success:
-            logger.info("Fitbit2Garmin Body composition migration completed successfully")
-        else:
-            logger.error("Fitbit2Garmin Body composition migration failed")
+        if migrator.isFitbitConfigured():
+            success = migrator.fitbit2garmin_migrate_body_composition()
+            if success:
+                logger.info("Fitbit2Garmin Body composition migration completed successfully")
+            else:
+                logger.error("Fitbit2Garmin Body composition migration failed")
 
-        success = migrator.omron2garmin_migrate_blood_pressure()
-        if success:
-            logger.info("Omron2Garmin blood pressure migration completed successfully")
-        else:
-            logger.error("Omron2Garmin blood pressure migration failed")
+        if migrator.isOmronConfigured():
+            success = migrator.omron2garmin_migrate_blood_pressure()
+            if success:
+                logger.info("Omron2Garmin blood pressure migration completed successfully")
+            else:
+                logger.error("Omron2Garmin blood pressure migration failed")
 
         return 0
             

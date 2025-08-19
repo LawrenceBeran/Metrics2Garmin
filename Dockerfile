@@ -1,4 +1,4 @@
-FROM python:3.13-bookworm
+FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
@@ -11,6 +11,7 @@ RUN apt-get update && \
     && rm -rf /etc/cron.*/*
 
 # Copy requirements and install Python dependencies
+RUN pip install --upgrade pip setuptools
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
