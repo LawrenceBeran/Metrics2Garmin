@@ -169,7 +169,6 @@ class FitbitAPI:
             token = self.refresh_fitbit_token()
             headers["Authorization"] = f"Bearer {token}"
             response = requests.get(url, headers=headers)
-            return False
 
         if self.handle_fitbit_rate_limits(response):
             response = requests.get(url, headers=headers)
