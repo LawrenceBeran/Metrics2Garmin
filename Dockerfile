@@ -1,5 +1,9 @@
 FROM python:3.13-slim
 
+LABEL version='0.0.1' \
+      maintainer='lawrence.beran@gmail.com' \
+      description='An application migrate weight metrics from Fitbit and blood pressure metrics from Omron to Garmin!'
+
 # Set working directory
 WORKDIR /app
 

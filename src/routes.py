@@ -11,9 +11,10 @@ app = Flask(__name__)
 def home():
     last_fitbit_migration_date = common.get_last_migration_date(MIGRATION_TYPE.FITBIT)
     last_omron_migration_date = common.get_last_migration_date(MIGRATION_TYPE.OMRON)
+    version = common.get_version()
     
     
-    return f'<h1>Hello from Flask & Docker</h1>' \
+    return f'<h1>Hello from metric2garmin ({version})</h1>' \
            f'<p>Last Fitbit metric migrated: {last_fitbit_migration_date.strftime("%x %X") if last_fitbit_migration_date else "Never"}</p>' \
            f'<p>Last Omron metric migrated: {last_omron_migration_date.strftime("%x %X") if last_omron_migration_date else "Never"}</p>' \
 

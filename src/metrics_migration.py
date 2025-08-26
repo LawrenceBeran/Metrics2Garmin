@@ -10,18 +10,17 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional
 import time
 from dateutil.parser import parse
-from garminconnect import Garmin
 from dotenv import load_dotenv
 
 import omron_api as omron
 import fitbit_api as fitbit
+import garmin_api as garmin
 from base_logger import logger
 from common import MIGRATION_TYPE
 import common
 
 # Load environment variables
 load_dotenv()
-
 
 # Enable debugging if specified in environment variables
 debug = os.getenv('DEBUG', 'false').lower() in ('true', '1', 't')
@@ -33,33 +32,41 @@ if debug:
 
 class BodyCompositionMigrator:
     def __init__(self):
-        self.setup_credentials()
         self._garmin_client = None
         self._fitbit_client = None
         self._omron_client = None
 
-       
-    def setup_credentials(self):
-        # Garmin credentials
-        self.garmin_email = os.getenv('GARMIN_EMAIL')
-        self.garmin_password = os.getenv('GARMIN_PASSWORD')
-  
-        required_vars = ['GARMIN_EMAIL', 'GARMIN_PASSWORD']
-        missing_vars = [var for var in required_vars if not os.getenv(var)]
-        if missing_vars:
-            raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
+
+    def isGarminConfigured(self) -> bool:
+        """Check if Garmin credentials are configured"""
+        email = os.getenv('GARMIN_EMAIL')
+        password = os.getenv('GARMIN_PASSWORD')
+        return bool(email and password)
 
     
-    def connect_garmin(self):
+    def connect_garmin(self) -> bool:
         """Initialize Garmin client"""
         try:
-            self._garmin_client = Garmin(self.garmin_email, self.garmin_password)
-            self._garmin_client.login()
-            logger.info("Successfully connected to Garmin")
-            return True
+            # Garmin credentials
+            garmin_email = os.getenv('GARMIN_EMAIL')
+            garmin_password = os.getenv('GARMIN_PASSWORD')
+    
+            required_vars = ['GARMIN_EMAIL', 'GARMIN_PASSWORD']
+            missing_vars = [var for var in required_vars if not os.getenv(var)]
+            if missing_vars:
+                raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
+
+            self._garmin_client = garmin.GarminAPI(garmin_email, garmin_password)
+            if self._garmin_client.login():
+                logger.info("Successfully connected to Garmin")
+                return True
+            else:
+                logger.error("Failed to connect to Garmin")
+
         except Exception as e:
             logger.exception(f"Failed to connect to Garmin: {e}")
-            return False
+        
+        return False
 
 
     def isFitbitConfigured(self) -> bool:
@@ -155,20 +162,7 @@ class BodyCompositionMigrator:
         for entry in blood_pressure_data:
             try:
                 entry_datetime = common.get_datetime_from_entry(entry)
-                timestamp = entry_datetime.isoformat() 
-
-                # Prepare body composition data
-                bp = {}
-                    
-                if entry.get('systolic'):
-                    bp['systolic'] = int(entry['systolic'])
-
-                if entry.get('diastolic'):
-                    bp['diastolic'] = int(entry['diastolic'])
-
-                if entry.get('pulse'):
-                    bp['pulse'] = int(entry['pulse'])
-
+                
                 notes = entry.get('notes', '')
                 if entry.get('movementDetect', False):
                     notes = f"{notes}, Body Movement detected"
@@ -179,29 +173,17 @@ class BodyCompositionMigrator:
                     
                 if notes:
                     notes = notes.lstrip(", ")
-                    bp['notes'] = notes
                 
                 # Upload to Garmin using the blood pressure method
-                result = self._garmin_client.set_blood_pressure(
-                        timestamp=timestamp
-                    ,   **bp
-                )
-                
-                if result:
+                if self._garmin_client.set_blood_pressure(
+                        timestamp=entry_datetime,
+                        systolic=int(entry['systolic']) if entry.get('systolic') else None,
+                        diastolic=int(entry['diastolic']) if entry.get('diastolic') else None,
+                        pulse=int(entry['pulse']) if entry.get('pulse') else None,
+                        notes=notes
+                    ):
                     successful_uploads += 1
-                    metrics = []
-                    if entry.get('systolic'):
-                        metrics.append(f"systolic: {entry['systolic']}{entry['systolicUnit']}")
-                    if entry.get('diastolic'):
-                        metrics.append(f"diastolic: {entry['diastolic']}{entry['diastolicUnit']}")
-                    if entry.get('pulse'):
-                        metrics.append(f"pulse: {entry['pulse']}{entry['pulseUnit']}")
-                    if entry.get('notes'):
-                        metrics.append(f"Notes: {notes}")
-                    
-                    logger.info(f"Successfully uploaded {', '.join(metrics)} for {timestamp}")
-                else:
-                    logger.warning(f"Failed to upload body data for {timestamp}")
+                    logger.info(f"Successfully uploaded blood pressure data for {entry_datetime}") 
                         
                 time.sleep(0.2)  # Rate limiting            
                 
@@ -222,39 +204,15 @@ class BodyCompositionMigrator:
                     continue
                 
                 entry_datetime = common.get_datetime_from_entry(entry)
-                timestamp = entry_datetime.isoformat() 
-                
-                # Prepare body composition data
-                body_composition = {}
-                
-                if entry.get('weight'):
-                    body_composition['weight'] = float(entry['weight'])
-                
-                if entry.get('bmi'):
-                    body_composition['bmi'] = float(entry['bmi'])
-                
-                if entry.get('body_fat'):
-                    body_composition['percent_fat'] = float(entry['body_fat'])
                 
                 # Upload to Garmin using the body composition method
-                result = self._garmin_client.add_body_composition(
-                    timestamp=timestamp,
-                    **body_composition
-                )
-                
-                if result:
+                if self._garmin_client.add_body_composition(
+                        timestamp=entry_datetime, 
+                        p_weight=entry.get('weight') if entry.get('weight') else None, 
+                        p_bmi=entry.get('bmi') if entry.get('bmi') else None, 
+                        p_body_fat=entry.get('body_fat') if entry.get('body_fat') else None
+                        ):
                     successful_uploads += 1
-                    metrics = []
-                    if entry.get('weight'):
-                        metrics.append(f"weight: {entry['weight']}kg")
-                    if entry.get('bmi'):
-                        metrics.append(f"BMI: {entry['bmi']}")
-                    if entry.get('body_fat'):
-                        metrics.append(f"body fat: {entry['body_fat']}%")
-                    
-                    logger.info(f"Successfully uploaded {', '.join(metrics)} for {timestamp}")
-                else:
-                    logger.warning(f"Failed to upload body data for {timestamp}")
                         
                 time.sleep(0.2)  # Rate limiting
                 
@@ -264,28 +222,7 @@ class BodyCompositionMigrator:
         return successful_uploads
 
     def get_garmin_bp_measurements(self, _from_date: datetime, _to_date: datetime):
-        # search dates are in local time
-        fromDate = _from_date.isoformat(timespec="seconds")
-        toDate = _to_date.isoformat(timespec="seconds")
-        
-        gcData = self._garmin_client.get_blood_pressure(startdate=fromDate, enddate=toDate)
-        
-        # reduce to list of measurements
-        _gcMeasurements = [metric for x in gcData["measurementSummaries"] for metric in x["measurements"]]        
-        
-        # map of garmin-key:omron-key
-        gcMeasurements = []
-        for metric in _gcMeasurements:
-            # use UTC for comparison
-            dtUTC = datetime.fromisoformat(f"{metric['measurementTimestampGMT']}Z")
-            gcMeasurements.append({
-                "systolic": metric["systolic"],
-                "diastolic": metric["diastolic"],
-                "pulse": metric["pulse"],
-                "measurementTimestamp": dtUTC.timestamp()
-            })
-        
-        return gcMeasurements
+        return self._garmin_client.get_blood_pressure_measurements(_from_date, _to_date)
 
 
     def get_latest_recorded_date(self, p_data) -> Optional[datetime]:
@@ -351,7 +288,7 @@ class BodyCompositionMigrator:
 
         return successful_uploads > 0
 
-    def omron2garmin_migrate_blood_pressure(self):
+    def omron2garmin_migrate_blood_pressure(self) -> bool:
         """Main migration function for blood pressure data"""
         logger.info("Starting blood pressure migration process")
 
@@ -419,7 +356,15 @@ class BodyCompositionMigrator:
 def main():
     """Main entry point"""
     try:
+        logger.info(f"Starting migration process with version {common.get_version()}")
         migrator = BodyCompositionMigrator()
+
+        if migrator.isGarminConfigured():
+            if migrator.connect_garmin():
+                logger.info("Garmin connection successful")
+            else:
+                logger.error("Failed to connect to Garmin. Aborting migration.")
+                return 1
 
         if migrator.isFitbitConfigured():
             success = migrator.fitbit2garmin_migrate_body_composition()

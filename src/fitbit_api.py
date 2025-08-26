@@ -19,9 +19,9 @@ class FitbitAPI:
         self.client_id = _client_id
         self.client_secret = _client_secret
         if not self.client_id or not self.client_secret:
-            logger.error("FITBIT_CLIENT_ID and FITBIT_CLIENT_SECRET must be set in environment variables.")
-            raise ValueError("FITBIT_CLIENT_ID and FITBIT_CLIENT_SECRET must be set in environment variables.")
-        
+            logger.error("Fitbit clientId and client secret must be provided.")
+            raise ValueError("Fitbit clientId and client secret must be provided.")
+
         tokens = self.load_tokens()
         self.access_token = tokens.get('access_token')
         self.refresh_token = tokens.get('refresh_token')

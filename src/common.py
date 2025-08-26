@@ -37,12 +37,22 @@ def get_datetime_from_entry(entry: Dict) -> datetime:
 
 
 STATE_FILE = '/app/data/migration_state.json'
+VERSION_FILE = '/app/src/version.txt'
 DEFAULT_DAYS = 30
 
 class MIGRATION_TYPE(Enum):
     FITBIT = 1
     GOOGLE_FIT = 2
     OMRON = 3
+
+def get_version() -> str:
+    """Get the version of the application"""
+    try:
+        with open(VERSION_FILE, 'r') as f:
+            return f.read().strip()
+    except Exception as e:
+        logger.exception(f"Error reading version file: {e}")
+        return '0.0.0'
 
 def get_migration_state() -> Dict:
     try:
