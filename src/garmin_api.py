@@ -4,7 +4,6 @@ from garth.exc import GarthHTTPError
 import json
 
 from base_logger import logger  
-import common
 
 from garminconnect import (
     Garmin,

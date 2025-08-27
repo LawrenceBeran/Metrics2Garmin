@@ -44,7 +44,7 @@ class BodyCompositionMigrator:
                 return False
             
             # Garmin credentials
-            garminCredentials = common.get_garmin_credentials()
+            garminCredentials = common.getGarminCredentials()
             self._garmin_client = garmin.GarminAPI(garminCredentials['email'], garminCredentials['password'])
             if self._garmin_client.login():
                 logger.info("Successfully connected to Garmin")
