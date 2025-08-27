@@ -183,7 +183,7 @@ class BodyCompositionMigrator:
                     
                     # Upload to Garmin using the body composition method
                     if self._garmin_client.add_body_composition(
-                            timestamp=entry_datetime, 
+                            p_timestamp=entry_datetime, 
                             p_weight=entry.get('weight') if entry.get('weight') else None, 
                             p_bmi=entry.get('bmi') if entry.get('bmi') else None, 
                             p_body_fat=entry.get('body_fat') if entry.get('body_fat') else None
