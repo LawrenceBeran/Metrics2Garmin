@@ -59,7 +59,7 @@ def get_migration_state() -> Dict:
         if os.path.exists(STATE_FILE):
             with open(STATE_FILE, 'r') as f:
                 state = json.load(f)
-                logger.info(f"Loaded migration state: {state}")
+                logger.info(f"Loaded migration state file!")
                 return state
     except Exception as e:
         logger.exception(f"Error reading state file {STATE_FILE}: {e}")
@@ -109,3 +109,44 @@ def save_migration_state(p_item: MIGRATION_TYPE, last_date: datetime):
         logger.info(f"Saved migration state: {p_item} {last_date}")
     except Exception as e:
         logger.exception(f"Error saving state file {STATE_FILE}: {e}")
+
+
+def isFitbitConfigured() -> bool:
+    """Check if Fitbit credentials are configured"""
+    client_id = os.getenv('FITBIT_CLIENT_ID')
+    client_secret = os.getenv('FITBIT_CLIENT_SECRET')
+    # TODO - add the check to ensure the token file exists as well!
+    return bool(client_id and client_secret)
+
+def getFitbitCredentials() -> Dict:
+    return {
+            'client_id': os.getenv('FITBIT_CLIENT_ID') if os.getenv('FITBIT_CLIENT_ID') else None,
+            'client_secret': os.getenv('FITBIT_CLIENT_SECRET') if os.getenv('FITBIT_CLIENT_SECRET') else None
+        }
+
+def isGarminConfigured() -> bool:
+    """Check if Garmin credentials are configured"""
+    email = os.getenv('GARMIN_EMAIL')
+    password = os.getenv('GARMIN_PASSWORD')
+    return bool(email and password)
+
+def getGarminCredentials() -> Dict:
+    return {
+            'email': os.getenv('GARMIN_EMAIL') if os.getenv('GARMIN_EMAIL') else None,
+            'password': os.getenv('GARMIN_PASSWORD') if os.getenv('GARMIN_PASSWORD') else None
+        }
+
+def isOmronConfigured() -> bool:
+    """Check if Omron credentials are configured"""
+    email_address = os.getenv('OMRON_EMAIL')
+    password = os.getenv('OMRON_PASSWORD')
+    country_code = os.getenv('OMRON_COUNTRY_CODE')
+    return bool(email_address and password and country_code)
+
+def getOmronCredentials() -> Dict:
+    return {
+            'email': os.getenv('OMRON_EMAIL') if os.getenv('OMRON_EMAIL') else None,
+            'password': os.getenv('OMRON_PASSWORD') if os.getenv('OMRON_PASSWORD') else None,
+            'country_code': os.getenv('OMRON_COUNTRY_CODE') if os.getenv('OMRON_COUNTRY_CODE') else None,
+            'user_number': os.getenv('OMRON_USER_NUMBER') if os.getenv('OMRON_USER_NUMBER') else -1
+        }

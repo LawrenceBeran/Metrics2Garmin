@@ -6,7 +6,7 @@ import hashlib
 import enum
 import pytz
 import json
-import os
+import common
 
 from base_logger import logger
 
@@ -227,15 +227,13 @@ def main():
     """Main entry point"""
     try:
         
-        email_address=os.getenv('OMRON_EMAIL')
-        password=os.getenv('OMRON_PASSWORD')
-        country_code=os.getenv('OMRON_COUNTRY_CODE', 'GB')
-        user_number=int(os.getenv('OMRON_USER_NUMBER', -1))
-
-        omron = OmronAPI(_email_address=email_address, _password=password, _country_code=country_code, _user_number=user_number)
-
-        userData = omron.getUserData()
-        ret = omron.getBloodPressureData(nextpaginationKey=0, lastSyncedTime=0)
+        if not common.isOmronConfigured():
+            return 1
+        else:
+            omronCredentials = common.getOmronCredentials()
+            omron = OmronAPI(_email_address=omronCredentials['email'], _password=omronCredentials['password'], _country_code=omronCredentials['country_code'], _user_number=omronCredentials['user_number'])
+            userData = omron.getUserData()
+            ret = omron.getBloodPressureData(nextpaginationKey=0, lastSyncedTime=0)
         
         return 0
             

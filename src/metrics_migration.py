@@ -36,30 +36,20 @@ class BodyCompositionMigrator:
         self._fitbit_client = None
         self._omron_client = None
 
-
-    def isGarminConfigured(self) -> bool:
-        """Check if Garmin credentials are configured"""
-        email = os.getenv('GARMIN_EMAIL')
-        password = os.getenv('GARMIN_PASSWORD')
-        return bool(email and password)
-
-    
     def connect_garmin(self) -> bool:
         """Initialize Garmin client"""
         try:
+            if not common.isGarminConfigured():
+                logger.error("Garmin credentials not configured")
+                return False
+            
             # Garmin credentials
-            garmin_email = os.getenv('GARMIN_EMAIL')
-            garmin_password = os.getenv('GARMIN_PASSWORD')
-    
-            required_vars = ['GARMIN_EMAIL', 'GARMIN_PASSWORD']
-            missing_vars = [var for var in required_vars if not os.getenv(var)]
-            if missing_vars:
-                raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
-
-            self._garmin_client = garmin.GarminAPI(garmin_email, garmin_password)
+            garminCredentials = common.get_garmin_credentials()
+            self._garmin_client = garmin.GarminAPI(garminCredentials['email'], garminCredentials['password'])
             if self._garmin_client.login():
                 logger.info("Successfully connected to Garmin")
                 return True
+            
             else:
                 logger.error("Failed to connect to Garmin")
 
@@ -70,25 +60,15 @@ class BodyCompositionMigrator:
         return False
 
 
-    def isFitbitConfigured(self) -> bool:
-        """Check if Fitbit credentials are configured"""
-        client_id = os.getenv('FITBIT_CLIENT_ID')
-        client_secret = os.getenv('FITBIT_CLIENT_SECRET')
-        return bool(client_id and client_secret)
-    
-    
     def connect_fitbit(self) -> bool:
         """Initialize Fitbit client"""
         try:
-            client_id = os.getenv('FITBIT_CLIENT_ID')
-            client_secret = os.getenv('FITBIT_CLIENT_SECRET')
+            if not common.isFitbitConfigured():
+                logger.error("Fitbit credentials not configured")
+                return False
 
-            required_vars = ['FITBIT_CLIENT_ID', 'FITBIT_CLIENT_SECRET']
-            missing_vars = [var for var in required_vars if not os.getenv(var)]
-            if missing_vars:
-                raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
-
-            self._fitbit_client = fitbit.FitbitAPI(client_id, client_secret)
+            fitbitCredentials = common.getFitbitCredentials()
+            self._fitbit_client = fitbit.FitbitAPI(fitbitCredentials['client_id'], fitbitCredentials['client_secret'])
             if not self._fitbit_client.check_fitbit_profile():
                 logger.error("Failed to connect to Fitbit: Invalid profile")
                 return False
@@ -99,28 +79,15 @@ class BodyCompositionMigrator:
             return False
 
 
-    def isOmronConfigured(self) -> bool:
-        """Check if Omron credentials are configured"""
-        email_address = os.getenv('OMRON_EMAIL')
-        password = os.getenv('OMRON_PASSWORD')
-        country_code = os.getenv('OMRON_COUNTRY_CODE')
-        return bool(email_address and password and country_code)
-
-
     def connect_omron(self) -> bool:
         """Initialize Omron client"""
         try:
-            email_address=os.getenv('OMRON_EMAIL')
-            password=os.getenv('OMRON_PASSWORD')
-            country_code=os.getenv('OMRON_COUNTRY_CODE')
-            user_number=int(os.getenv('OMRON_USER_NUMBER', -1))
+            if not common.isOmronConfigured():
+                logger.error("Omron credentials not configured")
+                return False
             
-            required_vars = ['OMRON_EMAIL', 'OMRON_PASSWORD', 'OMRON_COUNTRY_CODE']
-            missing_vars = [var for var in required_vars if not os.getenv(var)]
-            if missing_vars:
-                raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")            
-            
-            self._omron_client = omron.OmronAPI(_email_address=email_address, _password=password, _country_code=country_code, _user_number=user_number)
+            omronCredentials = common.getOmronCredentials()
+            self._omron_client = omron.OmronAPI(omronCredentials['email'], omronCredentials['password'], omronCredentials['country_code'], omronCredentials['user_number'])
             if not self._omron_client._login():
                 logger.error("Failed to connect to Omron: Invalid credentials")
                 return False
@@ -374,21 +341,21 @@ def main():
         logger.info(f"Starting migration process with version {common.get_version()}")
         migrator = BodyCompositionMigrator()
 
-        if migrator.isGarminConfigured():
+        if common.isGarminConfigured():
             if migrator.connect_garmin():
                 logger.info("Garmin connection successful")
             else:
                 logger.error("Failed to connect to Garmin. Aborting migration.")
                 return 1
 
-        if migrator.isFitbitConfigured():
+        if common.isFitbitConfigured():
             success = migrator.fitbit2garmin_migrate_body_composition()
             if success:
                 logger.info("Fitbit2Garmin Body composition migration completed successfully")
             else:
                 logger.error("Fitbit2Garmin Body composition migration failed")
 
-        if migrator.isOmronConfigured():
+        if common.isOmronConfigured():
             success = migrator.omron2garmin_migrate_blood_pressure()
             if success:
                 logger.info("Omron2Garmin blood pressure migration completed successfully")
