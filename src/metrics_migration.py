@@ -65,7 +65,8 @@ class BodyCompositionMigrator:
 
         except Exception as e:
             logger.exception(f"Failed to connect to Garmin: {e}")
-        
+
+        self._garmin_client = None
         return False
 
 
@@ -158,37 +159,41 @@ class BodyCompositionMigrator:
     def upload_blood_pressure_data_to_garmin(self, blood_pressure_data: List[Dict]) -> int:
         """Upload blood pressure data to Garmin Connect"""
         successful_uploads = 0
-     
-        for entry in blood_pressure_data:
-            try:
-                entry_datetime = common.get_datetime_from_entry(entry)
-                
-                notes = entry.get('notes', '')
-                if entry.get('movementDetect', False):
-                    notes = f"{notes}, Body Movement detected"
-                if entry.get('irregularHB', False):
-                    notes = f"{notes}, Irregular heartbeat detected"
-                if not entry.get('cuffWrapDetect', True):
-                    notes = f"{notes}, Cuff wrap error"
+
+        if not self._garmin_client:
+            logger.error("Garmin client not initialized")
+
+        else:
+            for entry in blood_pressure_data:
+                try:
+                    entry_datetime = common.get_datetime_from_entry(entry)
                     
-                if notes:
-                    notes = notes.lstrip(", ")
-                
-                # Upload to Garmin using the blood pressure method
-                if self._garmin_client.set_blood_pressure(
-                        timestamp=entry_datetime,
-                        systolic=int(entry['systolic']) if entry.get('systolic') else None,
-                        diastolic=int(entry['diastolic']) if entry.get('diastolic') else None,
-                        pulse=int(entry['pulse']) if entry.get('pulse') else None,
-                        notes=notes
-                    ):
-                    successful_uploads += 1
-                    logger.info(f"Successfully uploaded blood pressure data for {entry_datetime}") 
+                    notes = entry.get('notes', '')
+                    if entry.get('movementDetect', False):
+                        notes = f"{notes}, Body Movement detected"
+                    if entry.get('irregularHB', False):
+                        notes = f"{notes}, Irregular heartbeat detected"
+                    if not entry.get('cuffWrapDetect', True):
+                        notes = f"{notes}, Cuff wrap error"
                         
-                time.sleep(0.2)  # Rate limiting            
-                
-            except Exception as e:
-                logger.exception(f"Error uploading body composition entry {entry}: {e}")
+                    if notes:
+                        notes = notes.lstrip(", ")
+                    
+                    # Upload to Garmin using the blood pressure method
+                    if self._garmin_client.set_blood_pressure(
+                            timestamp=entry_datetime,
+                            systolic=int(entry['systolic']) if entry.get('systolic') else None,
+                            diastolic=int(entry['diastolic']) if entry.get('diastolic') else None,
+                            pulse=int(entry['pulse']) if entry.get('pulse') else None,
+                            notes=notes
+                        ):
+                        successful_uploads += 1
+                        logger.info(f"Successfully uploaded blood pressure data for {entry_datetime}") 
+                            
+                    time.sleep(0.2)  # Rate limiting            
+                    
+                except Exception as e:
+                    logger.exception(f"Error uploading body composition entry {entry}: {e}")
         
         return successful_uploads
     
@@ -197,32 +202,42 @@ class BodyCompositionMigrator:
         """Upload body composition data to Garmin Connect"""
         successful_uploads = 0
         
-        for entry in body_data:
-            try:
-                # Skip entries with no data
-                if not any([entry.get('weight'), entry.get('bmi'), entry.get('body_fat')]):
-                    continue
-                
-                entry_datetime = common.get_datetime_from_entry(entry)
-                
-                # Upload to Garmin using the body composition method
-                if self._garmin_client.add_body_composition(
-                        timestamp=entry_datetime, 
-                        p_weight=entry.get('weight') if entry.get('weight') else None, 
-                        p_bmi=entry.get('bmi') if entry.get('bmi') else None, 
-                        p_body_fat=entry.get('body_fat') if entry.get('body_fat') else None
-                        ):
-                    successful_uploads += 1
-                        
-                time.sleep(0.2)  # Rate limiting
-                
-            except Exception as e:
-                logger.exception(f"Error uploading body composition entry {entry}: {e}")
+        if not self._garmin_client:
+            logger.error("Garmin client not initialized")
+
+        else:        
+            for entry in body_data:
+                try:
+                    # Skip entries with no data
+                    if not any([entry.get('weight'), entry.get('bmi'), entry.get('body_fat')]):
+                        continue
+                    
+                    entry_datetime = common.get_datetime_from_entry(entry)
+                    
+                    # Upload to Garmin using the body composition method
+                    if self._garmin_client.add_body_composition(
+                            timestamp=entry_datetime, 
+                            p_weight=entry.get('weight') if entry.get('weight') else None, 
+                            p_bmi=entry.get('bmi') if entry.get('bmi') else None, 
+                            p_body_fat=entry.get('body_fat') if entry.get('body_fat') else None
+                            ):
+                        successful_uploads += 1
+                            
+                    time.sleep(0.2)  # Rate limiting
+                    
+                except Exception as e:
+                    logger.exception(f"Error uploading body composition entry {entry}: {e}")
         
         return successful_uploads
 
     def get_garmin_bp_measurements(self, _from_date: datetime, _to_date: datetime):
-        return self._garmin_client.get_blood_pressure_measurements(_from_date, _to_date)
+        
+        if not self._garmin_client:
+            logger.error("Garmin client not initialized")
+            return None
+
+        else:
+            return self._garmin_client.get_blood_pressure_measurements(_from_date, _to_date)
 
 
     def get_latest_recorded_date(self, p_data) -> Optional[datetime]:
@@ -244,8 +259,8 @@ class BodyCompositionMigrator:
             logger.error("Failed to connect to Fitbit. Aborting migration.")
             return False
         
-        if not self.connect_garmin():
-            logger.error("Failed to connect to Garmin. Aborting migration.")
+        if not self._garmin_client:
+            logger.error("Not connected to Garmin. Aborting migration.")
             return False
         
         # Get date range for migration
@@ -297,8 +312,8 @@ class BodyCompositionMigrator:
             logger.error("Failed to connect to Omron. Aborting migration.")
             return False
 
-        if not self.connect_garmin():
-            logger.error("Failed to connect to Garmin. Aborting migration.")
+        if not self._garmin_client:
+            logger.error("Not connected to Garmin. Aborting migration.")
             return False
 
         # Get date range for migration

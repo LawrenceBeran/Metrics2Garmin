@@ -33,25 +33,33 @@ class GarminAPI:
             with open(TOKEN_FILE, "r") as f:
                 return json.load(f)
             logger.info(f"Successfully loaded tokens from {TOKEN_FILE}")
+        except FileNotFoundError:
+            logger.debug(f"Token file {TOKEN_FILE} not found.")
         except Exception as e:
-            logger.exception(f"Failed to load token file: {TOKEN_FILE}. Please ensure it exists and is valid JSON. {e}")
+            logger.exception(f"Failed to load token file: {TOKEN_FILE}. Please ensure it exists and is valid JSON. {e}")   
+        return None
 
-
-    def save_tokens(self, tokens):
+    def save_tokens(self, tokens) -> bool:
         try:
             with open(TOKEN_FILE, "w") as f:
                 json.dump(tokens, f)
                 logger.info(f"Successfully saved tokens to {TOKEN_FILE}")
         except Exception as e:
             logger.exception(f"Failed to save tokens to {TOKEN_FILE}. Please check file permissions and path. {e}")
+        else:
+            return True
+        return False
 
     def login(self) -> bool:
         try:
             # Try to connect using (possibly) cached OAuth2 tokens
             tokens = self.load_tokens()
-            self._garmin_client = Garmin()
-            self._garmin_client.login(tokens)
-            return True
+            if tokens:
+                self._garmin_client = Garmin()
+                self._garmin_client.login(tokens)
+                return True
+            else:
+                raise FileNotFoundError()
 
         except (FileNotFoundError, GarthHTTPError, GarminConnectAuthenticationError):
             # Session is expired or tokens do not exist. You'll need to log in again
