@@ -148,7 +148,7 @@ class BodyCompositionMigrator:
                     
                     # Upload to Garmin using the blood pressure method
                     if self._garmin_client.set_blood_pressure(
-                            timestamp=entry_datetime,
+                            p_timestamp=entry_datetime,
                             systolic=int(entry['systolic']) if entry.get('systolic') else None,
                             diastolic=int(entry['diastolic']) if entry.get('diastolic') else None,
                             pulse=int(entry['pulse']) if entry.get('pulse') else None,
